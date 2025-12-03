@@ -2094,11 +2094,9 @@ __dmpostvalueset(__pmContext *ctxp, struct timespec *stamp, int vnumpmid,
 	    /* already one pmValue in a pmValueSet */
 	    need = sizeof(pmValueSet) + (numval - 1)*sizeof(pmValue);
 	}
-	if (need > 0) {
-	    if ((newvset[j] = (pmValueSet *)malloc(need)) == NULL) {
-		pmNoMem("__dmpostvalueset: vset", need, PM_FATAL_ERR);
-		/*NOTREACHED*/
-	    }
+	if ((newvset[j] = (pmValueSet *)malloc(need)) == NULL) {
+	    pmNoMem("__dmpostvalueset: vset", need, PM_FATAL_ERR);
+	    /*NOTREACHED*/
 	}
 	newvset[j]->pmid = vset[j]->pmid;
 	newvset[j]->numval = numval;
