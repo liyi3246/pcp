@@ -1299,10 +1299,20 @@ eval_expr(__pmContext *ctxp, node_t *np, struct timespec *stamp, int numpmid,
 				np->data.info->ivlist[i].value.d = pick->data.info->ivlist[0].value.d;
 			    break;
 			case PM_TYPE_STRING:
-			    if (i < pick->data.info->numval)
-				np->data.info->ivlist[i].value.cp = pick->data.info->ivlist[i].value.cp;
-			    else
-				np->data.info->ivlist[i].value.cp = pick->data.info->ivlist[0].value.cp;
+			    if (i < pick->data.info->numval) {
+				np->data.info->ivlist[i].vlen = pick->data.info->ivlist[i].vlen;
+				if ((np->data.info->ivlist[i].value.cp = (char *)malloc(np->data.info->ivlist[i].vlen)) == NULL) {
+				    pmNoMem("eval_expr: N_QUEST string", np->data.info->ivlist[i].vlen, PM_FATAL_ERR);
+				}
+				memcpy(np->data.info->ivlist[i].value.cp, pick->data.info->ivlist[i].value.cp, np->data.info->ivlist[i].vlen);
+			    }
+			    else {
+				np->data.info->ivlist[i].vlen = pick->data.info->ivlist[0].vlen;
+				if ((np->data.info->ivlist[i].value.cp = (char *)malloc(np->data.info->ivlist[i].vlen)) == NULL) {
+				    pmNoMem("eval_expr: N_QUEST string", np->data.info->ivlist[i].vlen, PM_FATAL_ERR);
+				}
+				memcpy(np->data.info->ivlist[i].value.cp, pick->data.info->ivlist[0].value.cp, np->data.info->ivlist[i].vlen);
+			    }
 			    break;
 			default:
 			    if (pmDebugOptions.derive) {
@@ -2094,11 +2104,9 @@ __dmpostvalueset(__pmContext *ctxp, struct timespec *stamp, int vnumpmid,
 	    /* already one pmValue in a pmValueSet */
 	    need = sizeof(pmValueSet) + (numval - 1)*sizeof(pmValue);
 	}
-	if (need > 0) {
-	    if ((newvset[j] = (pmValueSet *)malloc(need)) == NULL) {
-		pmNoMem("__dmpostvalueset: vset", need, PM_FATAL_ERR);
-		/*NOTREACHED*/
-	    }
+	if ((newvset[j] = (pmValueSet *)malloc(need)) == NULL) {
+	    pmNoMem("__dmpostvalueset: vset", need, PM_FATAL_ERR);
+	    /*NOTREACHED*/
 	}
 	newvset[j]->pmid = vset[j]->pmid;
 	newvset[j]->numval = numval;
@@ -2184,7 +2192,7 @@ __dmpostvalueset(__pmContext *ctxp, struct timespec *stamp, int vnumpmid,
 		    }
 		    vp->vlen = need;
 		    vp->vtype = PM_TYPE_DOUBLE;
-		    memcpy((void *)vp->vbuf, (void *)&cp->mlist[m].expr->data.info->ivlist[i].value.f, sizeof(double));
+		    memcpy((void *)vp->vbuf, (void *)&cp->mlist[m].expr->data.info->ivlist[i].value.d, sizeof(double));
 		    newvset[j]->vlist[i].value.pval = vp;
 		    break;
 
