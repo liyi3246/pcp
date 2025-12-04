@@ -1300,12 +1300,18 @@ eval_expr(__pmContext *ctxp, node_t *np, struct timespec *stamp, int numpmid,
 			    break;
 			case PM_TYPE_STRING:
 			    if (i < pick->data.info->numval) {
-				np->data.info->ivlist[i].value.cp = pick->data.info->ivlist[i].value.cp;
 				np->data.info->ivlist[i].vlen = pick->data.info->ivlist[i].vlen;
+				if ((np->data.info->ivlist[i].value.cp = (char *)malloc(np->data.info->ivlist[i].vlen)) == NULL) {
+				    pmNoMem("eval_expr: N_QUEST string", np->data.info->ivlist[i].vlen, PM_FATAL_ERR);
+				}
+				memcpy(np->data.info->ivlist[i].value.cp, pick->data.info->ivlist[i].value.cp, np->data.info->ivlist[i].vlen);
 			    }
 			    else {
-				np->data.info->ivlist[i].value.cp = pick->data.info->ivlist[0].value.cp;
 				np->data.info->ivlist[i].vlen = pick->data.info->ivlist[0].vlen;
+				if ((np->data.info->ivlist[i].value.cp = (char *)malloc(np->data.info->ivlist[i].vlen)) == NULL) {
+				    pmNoMem("eval_expr: N_QUEST string", np->data.info->ivlist[i].vlen, PM_FATAL_ERR);
+				}
+				memcpy(np->data.info->ivlist[i].value.cp, pick->data.info->ivlist[0].value.cp, np->data.info->ivlist[i].vlen);
 			    }
 			    break;
 			default:
