@@ -65,21 +65,37 @@ cc myapp.c $(pkg-config --cflags --libs pcp)
 
 ```c
 #include <pcp/pmapi.h>
+#include <stdio.h>
 
 int main(int argc, char **argv)
 {
-    int ctx;
+    int ctx, sts;
     pmID pmid;
     pmResult *result;
+    char *metric = "kernel.all.load";
     
     /* Create a context (connection) */
     ctx = pmNewContext(PM_CONTEXT_HOST, "localhost");
+    if (ctx < 0) {
+        fprintf(stderr, "Cannot connect to PMCD: %s\n", pmErrStr(ctx));
+        return 1;
+    }
     
     /* Look up a metric by name */
-    pmLookupName(1, &"kernel.all.load", &pmid);
+    sts = pmLookupName(1, &metric, &pmid);
+    if (sts < 0) {
+        fprintf(stderr, "Cannot lookup metric: %s\n", pmErrStr(sts));
+        pmDestroyContext(ctx);
+        return 1;
+    }
     
     /* Fetch metric values */
-    pmFetch(1, &pmid, &result);
+    sts = pmFetch(1, &pmid, &result);
+    if (sts < 0) {
+        fprintf(stderr, "Cannot fetch metric: %s\n", pmErrStr(sts));
+        pmDestroyContext(ctx);
+        return 1;
+    }
     
     /* Use the values ... */
     
