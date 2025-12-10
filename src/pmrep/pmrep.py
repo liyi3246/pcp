@@ -35,6 +35,8 @@ import time
 import math
 import re
 import os
+import traceback
+import inspect
 
 # PCP Python PMAPI
 from pcp import pmapi, pmi, pmconfig
@@ -63,6 +65,48 @@ SINGULR = "="
 OUTPUT_ARCHIVE = "archive"
 OUTPUT_CSV     = "csv"
 OUTPUT_STDOUT  = "stdout"
+
+def print_debug_info():
+    """ Print debug information about how pmrep.py was called """
+    print("=" * 80, file=sys.stderr)
+    print("DEBUG: pmrep.py invocation information", file=sys.stderr)
+    print("=" * 80, file=sys.stderr)
+    
+    # Print command line arguments
+    print("\n[Command Line Arguments]", file=sys.stderr)
+    print(f"Script: {sys.argv[0]}", file=sys.stderr)
+    print(f"Number of arguments: {len(sys.argv) - 1}", file=sys.stderr)
+    if len(sys.argv) > 1:
+        print("Arguments:", file=sys.stderr)
+        for i, arg in enumerate(sys.argv[1:], 1):
+            print(f"  [{i}] {arg}", file=sys.stderr)
+    else:
+        print("No arguments provided", file=sys.stderr)
+    
+    # Print caller information (call stack)
+    print("\n[Call Stack Information]", file=sys.stderr)
+    stack = traceback.extract_stack()
+    print(f"Call stack depth: {len(stack)}", file=sys.stderr)
+    print("Stack frames (most recent last):", file=sys.stderr)
+    for i, frame in enumerate(stack):
+        print(f"  [{i}] File: {frame.filename}, Line: {frame.lineno}, Function: {frame.name}", file=sys.stderr)
+    
+    # Print current execution context
+    print("\n[Execution Context]", file=sys.stderr)
+    print(f"Current working directory: {os.getcwd()}", file=sys.stderr)
+    print(f"Script location: {os.path.abspath(__file__)}", file=sys.stderr)
+    print(f"Python executable: {sys.executable}", file=sys.stderr)
+    print(f"Python version: {sys.version}", file=sys.stderr)
+    
+    # Print relevant environment variables
+    print("\n[Relevant Environment Variables]", file=sys.stderr)
+    env_vars = ['PCP_SYSCONF_DIR', 'HOME', 'USER', 'PMCD_HOST', 'PMLOGGER_REQUEST_TIMEOUT']
+    for var in env_vars:
+        value = os.environ.get(var, '(not set)')
+        print(f"  {var}: {value}", file=sys.stderr)
+    
+    print("\n" + "=" * 80, file=sys.stderr)
+    print(file=sys.stderr)
 
 class PMReporter(object):
     """ Report PCP metrics """
@@ -1548,6 +1592,9 @@ class PMReporter(object):
             self.pmi = None
 
 if __name__ == '__main__':
+    # Print debug information about how pmrep.py was called
+    print_debug_info()
+    
     try:
         P = PMReporter()
         P.connect()
