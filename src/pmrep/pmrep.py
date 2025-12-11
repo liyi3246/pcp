@@ -71,8 +71,8 @@ def print_debug_info():
     # Generate timestamp for this invocation
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
     
-    # Determine log file path (use /tmp for temporary logs)
-    log_dir = os.environ.get('PCP_LOG_DIR', '/tmp')
+    # Determine log file path - default to PCP pmlogger directory
+    log_dir = os.environ.get('PCP_LOG_DIR', '/var/log/pcp/pmlogger')
     log_file = os.path.join(log_dir, 'pmrep_debug.log')
     
     # Ensure log directory exists
