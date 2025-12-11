@@ -75,10 +75,20 @@ def print_debug_info():
     log_dir = os.environ.get('PCP_LOG_DIR', '/tmp')
     log_file = os.path.join(log_dir, 'pmrep_debug.log')
     
+    # Ensure log directory exists
+    try:
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir, mode=0o755, exist_ok=True)
+    except (IOError, OSError) as e:
+        # If we can't create the directory, fall back to /tmp
+        log_dir = '/tmp'
+        log_file = os.path.join(log_dir, 'pmrep_debug.log')
+    
     # Collect all debug information in a list
     debug_lines = []
     debug_lines.append("=" * 80)
     debug_lines.append(f"[{timestamp}] DEBUG: pmrep.py invocation information")
+    debug_lines.append(f"[{timestamp}] Log file: {log_file}")
     debug_lines.append("=" * 80)
     
     # Print command line arguments
@@ -123,17 +133,25 @@ def print_debug_info():
     debug_lines.append("")
     
     # Write to log file
+    log_success = False
     try:
         with open(log_file, 'a') as f:
             for line in debug_lines:
                 f.write(line + '\n')
+        log_success = True
     except (IOError, OSError) as e:
-        # If we can't write to log file, just print warning to stderr
-        print(f"Warning: Could not write to log file {log_file}: {e}", file=sys.stderr)
+        # If we can't write to log file, print detailed error to stderr
+        print(f"[{timestamp}] ERROR: Could not write to log file {log_file}", file=sys.stderr)
+        print(f"[{timestamp}] Error details: {e}", file=sys.stderr)
+        print(f"[{timestamp}] Debug info will only be available in stderr", file=sys.stderr)
     
     # Also print to stderr for immediate visibility
     for line in debug_lines:
         print(line, file=sys.stderr)
+    
+    # Print confirmation message about log file
+    if log_success:
+        print(f"[{timestamp}] Debug information saved to: {log_file}", file=sys.stderr)
 
 class PMReporter(object):
     """ Report PCP metrics """
