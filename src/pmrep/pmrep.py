@@ -68,45 +68,72 @@ OUTPUT_STDOUT  = "stdout"
 
 def print_debug_info():
     """ Print debug information about how pmrep.py was called """
-    print("=" * 80, file=sys.stderr)
-    print("DEBUG: pmrep.py invocation information", file=sys.stderr)
-    print("=" * 80, file=sys.stderr)
+    # Generate timestamp for this invocation
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    
+    # Determine log file path (use /tmp for temporary logs)
+    log_dir = os.environ.get('PCP_LOG_DIR', '/tmp')
+    log_file = os.path.join(log_dir, 'pmrep_debug.log')
+    
+    # Collect all debug information in a list
+    debug_lines = []
+    debug_lines.append("=" * 80)
+    debug_lines.append(f"[{timestamp}] DEBUG: pmrep.py invocation information")
+    debug_lines.append("=" * 80)
     
     # Print command line arguments
-    print("\n[Command Line Arguments]", file=sys.stderr)
-    print(f"Script: {sys.argv[0]}", file=sys.stderr)
-    print(f"Number of arguments: {len(sys.argv) - 1}", file=sys.stderr)
+    debug_lines.append("")
+    debug_lines.append(f"[{timestamp}] [Command Line Arguments]")
+    debug_lines.append(f"[{timestamp}] Script: {sys.argv[0]}")
+    debug_lines.append(f"[{timestamp}] Number of arguments: {len(sys.argv) - 1}")
     if len(sys.argv) > 1:
-        print("Arguments:", file=sys.stderr)
+        debug_lines.append(f"[{timestamp}] Arguments:")
         for i, arg in enumerate(sys.argv[1:], 1):
-            print(f"  [{i}] {arg}", file=sys.stderr)
+            debug_lines.append(f"[{timestamp}]   [{i}] {arg}")
     else:
-        print("No arguments provided", file=sys.stderr)
+        debug_lines.append(f"[{timestamp}] No arguments provided")
     
     # Print caller information (call stack)
-    print("\n[Call Stack Information]", file=sys.stderr)
+    debug_lines.append("")
+    debug_lines.append(f"[{timestamp}] [Call Stack Information]")
     stack = traceback.extract_stack()
-    print(f"Call stack depth: {len(stack)}", file=sys.stderr)
-    print("Stack frames (most recent last):", file=sys.stderr)
+    debug_lines.append(f"[{timestamp}] Call stack depth: {len(stack)}")
+    debug_lines.append(f"[{timestamp}] Stack frames (most recent last):")
     for i, frame in enumerate(stack):
-        print(f"  [{i}] File: {frame.filename}, Line: {frame.lineno}, Function: {frame.name}", file=sys.stderr)
+        debug_lines.append(f"[{timestamp}]   [{i}] File: {frame.filename}, Line: {frame.lineno}, Function: {frame.name}")
     
     # Print current execution context
-    print("\n[Execution Context]", file=sys.stderr)
-    print(f"Current working directory: {os.getcwd()}", file=sys.stderr)
-    print(f"Script location: {os.path.abspath(__file__)}", file=sys.stderr)
-    print(f"Python executable: {sys.executable}", file=sys.stderr)
-    print(f"Python version: {sys.version}", file=sys.stderr)
+    debug_lines.append("")
+    debug_lines.append(f"[{timestamp}] [Execution Context]")
+    debug_lines.append(f"[{timestamp}] Current working directory: {os.getcwd()}")
+    debug_lines.append(f"[{timestamp}] Script location: {os.path.abspath(__file__)}")
+    debug_lines.append(f"[{timestamp}] Python executable: {sys.executable}")
+    debug_lines.append(f"[{timestamp}] Python version: {sys.version}")
     
     # Print relevant environment variables
-    print("\n[Relevant Environment Variables]", file=sys.stderr)
+    debug_lines.append("")
+    debug_lines.append(f"[{timestamp}] [Relevant Environment Variables]")
     env_vars = ['PCP_SYSCONF_DIR', 'HOME', 'USER', 'PMCD_HOST', 'PMLOGGER_REQUEST_TIMEOUT']
     for var in env_vars:
         value = os.environ.get(var, '(not set)')
-        print(f"  {var}: {value}", file=sys.stderr)
+        debug_lines.append(f"[{timestamp}]   {var}: {value}")
     
-    print("\n" + "=" * 80, file=sys.stderr)
-    print(file=sys.stderr)
+    debug_lines.append("")
+    debug_lines.append("=" * 80)
+    debug_lines.append("")
+    
+    # Write to log file
+    try:
+        with open(log_file, 'a') as f:
+            for line in debug_lines:
+                f.write(line + '\n')
+    except (IOError, OSError) as e:
+        # If we can't write to log file, just print warning to stderr
+        print(f"Warning: Could not write to log file {log_file}: {e}", file=sys.stderr)
+    
+    # Also print to stderr for immediate visibility
+    for line in debug_lines:
+        print(line, file=sys.stderr)
 
 class PMReporter(object):
     """ Report PCP metrics """
