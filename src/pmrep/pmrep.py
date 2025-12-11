@@ -35,6 +35,8 @@ import time
 import math
 import re
 import os
+import traceback
+import inspect
 
 # PCP Python PMAPI
 from pcp import pmapi, pmi, pmconfig
@@ -63,6 +65,93 @@ SINGULR = "="
 OUTPUT_ARCHIVE = "archive"
 OUTPUT_CSV     = "csv"
 OUTPUT_STDOUT  = "stdout"
+
+def print_debug_info():
+    """ Print debug information about how pmrep.py was called """
+    # Generate timestamp for this invocation
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    
+    # Determine log file path - default to PCP pmlogger directory
+    log_dir = os.environ.get('PCP_LOG_DIR', '/var/log/pcp/pmlogger')
+    log_file = os.path.join(log_dir, 'pmrep_debug.log')
+    
+    # Ensure log directory exists
+    try:
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir, mode=0o755, exist_ok=True)
+    except (IOError, OSError) as e:
+        # If we can't create the directory, fall back to /tmp
+        log_dir = '/tmp'
+        log_file = os.path.join(log_dir, 'pmrep_debug.log')
+    
+    # Collect all debug information in a list
+    debug_lines = []
+    debug_lines.append("=" * 80)
+    debug_lines.append(f"[{timestamp}] DEBUG: pmrep.py invocation information")
+    debug_lines.append(f"[{timestamp}] Log file: {log_file}")
+    debug_lines.append("=" * 80)
+    
+    # Print command line arguments
+    debug_lines.append("")
+    debug_lines.append(f"[{timestamp}] [Command Line Arguments]")
+    debug_lines.append(f"[{timestamp}] Script: {sys.argv[0]}")
+    debug_lines.append(f"[{timestamp}] Number of arguments: {len(sys.argv) - 1}")
+    if len(sys.argv) > 1:
+        debug_lines.append(f"[{timestamp}] Arguments:")
+        for i, arg in enumerate(sys.argv[1:], 1):
+            debug_lines.append(f"[{timestamp}]   [{i}] {arg}")
+    else:
+        debug_lines.append(f"[{timestamp}] No arguments provided")
+    
+    # Print caller information (call stack)
+    debug_lines.append("")
+    debug_lines.append(f"[{timestamp}] [Call Stack Information]")
+    stack = traceback.extract_stack()
+    debug_lines.append(f"[{timestamp}] Call stack depth: {len(stack)}")
+    debug_lines.append(f"[{timestamp}] Stack frames (most recent last):")
+    for i, frame in enumerate(stack):
+        debug_lines.append(f"[{timestamp}]   [{i}] File: {frame.filename}, Line: {frame.lineno}, Function: {frame.name}")
+    
+    # Print current execution context
+    debug_lines.append("")
+    debug_lines.append(f"[{timestamp}] [Execution Context]")
+    debug_lines.append(f"[{timestamp}] Current working directory: {os.getcwd()}")
+    debug_lines.append(f"[{timestamp}] Script location: {os.path.abspath(__file__)}")
+    debug_lines.append(f"[{timestamp}] Python executable: {sys.executable}")
+    debug_lines.append(f"[{timestamp}] Python version: {sys.version}")
+    
+    # Print relevant environment variables
+    debug_lines.append("")
+    debug_lines.append(f"[{timestamp}] [Relevant Environment Variables]")
+    env_vars = ['PCP_SYSCONF_DIR', 'HOME', 'USER', 'PMCD_HOST', 'PMLOGGER_REQUEST_TIMEOUT']
+    for var in env_vars:
+        value = os.environ.get(var, '(not set)')
+        debug_lines.append(f"[{timestamp}]   {var}: {value}")
+    
+    debug_lines.append("")
+    debug_lines.append("=" * 80)
+    debug_lines.append("")
+    
+    # Write to log file
+    log_success = False
+    try:
+        with open(log_file, 'a') as f:
+            for line in debug_lines:
+                f.write(line + '\n')
+        log_success = True
+    except (IOError, OSError) as e:
+        # If we can't write to log file, print detailed error to stderr
+        print(f"[{timestamp}] ERROR: Could not write to log file {log_file}", file=sys.stderr)
+        print(f"[{timestamp}] Error details: {e}", file=sys.stderr)
+        print(f"[{timestamp}] Debug info will only be available in stderr", file=sys.stderr)
+    
+    # Also print to stderr for immediate visibility
+    for line in debug_lines:
+        print(line, file=sys.stderr)
+    
+    # Print confirmation message about log file
+    if log_success:
+        print(f"[{timestamp}] Debug information saved to: {log_file}", file=sys.stderr)
 
 class PMReporter(object):
     """ Report PCP metrics """
@@ -1548,6 +1637,9 @@ class PMReporter(object):
             self.pmi = None
 
 if __name__ == '__main__':
+    # Print debug information about how pmrep.py was called
+    print_debug_info()
+    
     try:
         P = PMReporter()
         P.connect()
