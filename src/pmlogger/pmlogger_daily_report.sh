@@ -173,13 +173,15 @@ then
 	    # run more than 23.5 hours ago, we need to do it again, otherwise
 	    # exit quietly
 	    #
-	    now_stamp=`pmdate %s`
-	    check=`expr $now_stamp - \( 23 \* 3600 \) - 1800`
-	    if [ "$last_stamp" -ge "$check" ]
-	    then
-		# nothing to be done, yet
-		exit
-	    fi
+	    # NOTE: 23.5 hour threshold check disabled - script will run regardless
+	    # of last execution time
+	    # now_stamp=`pmdate %s`
+	    # check=`expr $now_stamp - \( 23 \* 3600 \) - 1800`
+	    # if [ "$last_stamp" -ge "$check" ]
+	    # then
+	    #     # nothing to be done, yet
+	    #     exit
+	    # fi
 	    touch $tmp/ok
 	fi
     fi
